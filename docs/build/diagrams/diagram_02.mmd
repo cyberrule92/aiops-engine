@@ -1,0 +1,48 @@
+flowchart TB
+    subgraph Ingress["Ingress Layer"]
+        WH[/Webhook Receivers\n/alerts/webhook/*/]
+        SCR[Prometheus Scraper Loop]
+        PROXY[PromQL Proxy]
+    end
+
+    subgraph Core["Processing Core (async background loops)"]
+        ING[Ingestion Service\nnormalize + fingerprint + dedup]
+        ANO[Anomaly Service\nIsoForest+ZScore+EWMA ensemble\n+ Holt forecast]
+        COR[Correlation Service\nUnion-Find + TF-IDF + temporal]
+        TOP[Topology Service\ncausal dependency graph]
+        RCA[RCA Service\nOllama prompt + JSON parse]
+    end
+
+    subgraph Platform["Platform Services"]
+        BUS[(Event Bus\nin-proc pub/sub)]
+        ORM[(Async SQLAlchemy)]
+    end
+
+    subgraph Edge["Delivery"]
+        REST[REST API]
+        SSE[SSE Streams]
+        UI[Static SPA\nVanilla JS + Chart.js]
+    end
+
+    WH --> ING
+    SCR --> ANO
+    ING --> ORM
+    ING --> BUS
+    ANO --> ORM
+    ANO --> BUS
+    ANO -. feeds .-> COR
+    COR --> TOP
+    TOP --> COR
+    COR --> ORM
+    COR --> BUS
+    COR --> RCA
+    RCA --> LLM2[Ollama]
+    RCA --> ORM
+    BUS --> SSE
+    ORM --> REST
+    PROXY --> REST
+    REST --> UI
+    SSE --> UI
+
+    classDef loop fill:#FFF1E0,stroke:#EA580C;
+    class ANO,COR,SCR loop;

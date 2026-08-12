@@ -1,0 +1,80 @@
+erDiagram
+    DATA_SOURCES ||--o{ ALERTS : "source_id"
+    ALERTS }o--o| CORRELATION_GROUPS : "correlation_group_id"
+    ANOMALIES }o--o| CORRELATION_GROUPS : "anomaly_ids[]"
+    CORRELATION_GROUPS ||--o{ RCA_REPORTS : "correlation_group_id"
+    ALERTS }o--o| ANOMALIES : "anomaly_id"
+    TOPOLOGY_NODES ||--o{ TOPOLOGY_EDGES : "src_key / dst_key"
+
+    DATA_SOURCES {
+        string id PK
+        string name
+        string source_type "prometheus|otel"
+        string endpoint
+        string status "ok|error|pending"
+        datetime last_scrape
+        json config
+    }
+    ALERTS {
+        string id PK
+        string fingerprint "indexed"
+        string source_type
+        string severity "critical|warning|info"
+        string status "firing|resolved|suppressed"
+        string namespace
+        string service
+        string node
+        json labels
+        string correlation_group_id
+        string anomaly_id
+        datetime starts_at
+    }
+    ANOMALIES {
+        string id PK
+        string metric_name
+        float score "0-1"
+        float zscore
+        string method "ensemble|isolation_forest|zscore"
+        string kind "observed|predicted"
+        datetime predicted_breach_at
+        string prediction_status "pending|confirmed|expired"
+        float deviation_pct
+    }
+    CORRELATION_GROUPS {
+        string id PK
+        json alert_ids
+        json anomaly_ids
+        float similarity_score
+        string pattern "cascade|fan-out|oscillation"
+        string signature "indexed dedup hash"
+        json inference "LLM incident"
+        string inference_status
+        string root_entity "causal root key"
+        json topology "subgraph"
+    }
+    RCA_REPORTS {
+        string id PK
+        string correlation_group_id
+        text root_cause
+        json contributing_factors
+        json remediation_steps
+        float confidence "0-1"
+        string llm_model
+        string status
+    }
+    TOPOLOGY_NODES {
+        string entity_key PK "type:name"
+        string entity_type "service|node|instance|..."
+        int alert_count
+        datetime last_seen
+    }
+    TOPOLOGY_EDGES {
+        string id PK
+        string src_key "indexed"
+        string dst_key "indexed"
+        string edge_type "structural|temporal|declared"
+        string relation "hosts|manages|contains|connects"
+        float weight
+        float confidence
+        int occurrences
+    }

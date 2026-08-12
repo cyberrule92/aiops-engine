@@ -1,0 +1,44 @@
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# ---- Local runtime config ----
+# Real values contain internal cluster addressing. See backend/.env.example.
+.env
+backend/.env
+
+# ---- Databases ----
+# aiops.db holds live alert/anomaly/RCA data and is far over GitHub's 100 MB limit.
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+
+# ---- Node (docs/build PDF toolchain) ----
+node_modules/
+
+# ---- Doc build intermediates ----
+docs/build/*.log
+docs/build/document.html
+
+# ---- Machine-local Claude Code settings (contains internal hostnames) ----
+.claude/settings.local.json
+
+# ---- Excluded per owner decision: branded / programme submission material ----
+docs/AIOps_Engine_Solution_Design_HPE.pdf
+AIOps_Engine_Abstract_Parasparam2026.pdf
+Parasparam_Idea_Submission.docx
+
+# ---- Editor / OS ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

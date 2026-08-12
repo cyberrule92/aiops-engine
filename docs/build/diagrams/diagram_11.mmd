@@ -1,0 +1,7 @@
+stateDiagram-v2
+    direction LR
+    [*] --> firing: ingest
+    firing --> suppressed: maintenance/dedup
+    firing --> resolved: send_resolved
+    suppressed --> firing: re-fire
+    resolved --> [*]

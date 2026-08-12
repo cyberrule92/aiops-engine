@@ -1,0 +1,5 @@
+flowchart LR
+    ENG[AIOps Engine] -- /metrics --> PROM2[Prometheus]
+    ENG -- OTEL traces/logs --> COLL[OTEL Collector]
+    PROM2 --> GRAF[Grafana / Engine dashboards]
+    PROM2 --> AM2[Alertmanager\nmeta-alerts]

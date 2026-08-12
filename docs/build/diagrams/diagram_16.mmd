@@ -1,0 +1,7 @@
+flowchart LR
+    GIT[Git push] --> CI[Build + lint + unit tests]
+    CI --> SCAN[Image scan + SBOM]
+    SCAN --> REG[(Private registry)]
+    REG --> CD[Helm upgrade\nRollingUpdate]
+    CD --> SMOKE[/health/full smoke test/]
+    SMOKE --> PROD[(observability ns)]

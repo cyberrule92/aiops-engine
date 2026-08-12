@@ -1,0 +1,8 @@
+flowchart LR
+    subgraph hard["Hardening layers"]
+        TLS[TLS termination\nIngress / mTLS]
+        AUTH[AuthN/Z\nOIDC + RBAC]
+        NP[NetworkPolicy\negress-deny default]
+        SEC[Secrets via K8s Secret/Vault]
+        SBX[Non-root, read-only FS,\ndropped caps]
+    end

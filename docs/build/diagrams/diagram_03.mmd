@@ -1,0 +1,22 @@
+flowchart LR
+    A[Alert / Metric\nin] --> B{Source type}
+    B -->|Alertmanager| C[normalize_prometheus_alert]
+    B -->|OTEL log| D[normalize_otel_log]
+    B -->|scraped metric| E[analyze_metric\nensemble score]
+    C --> F[fingerprint + dedup]
+    D --> F
+    E -->|score >= MIN| G[persist Anomaly]
+    F -->|new| H[persist Alert]
+    E -->|forecast breach| I[persist predicted Anomaly]
+    H --> J[Correlation sweep\nUnion-Find]
+    G --> J
+    J --> K[Topology: record + learn edges]
+    K --> L[rank_root_causes\ncausal root]
+    L --> M[CorrelationGroup\n+ root_entity + subgraph]
+    M --> N[LLM inference\nsynthesized incident]
+    M --> O[RCA on demand/auto\nOllama]
+    N --> P[(Event Bus)]
+    O --> P
+    H --> P
+    G --> P
+    P --> Q[SSE -> UI]

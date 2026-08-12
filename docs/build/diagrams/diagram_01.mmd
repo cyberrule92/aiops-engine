@@ -1,0 +1,26 @@
+flowchart LR
+    subgraph Sources["Telemetry Sources (existing stack)"]
+        P[Prometheus]
+        AM[Alertmanager]
+        OTEL[OTEL Collector]
+    end
+
+    subgraph Engine["AIOps Intelligence Engine"]
+        API[FastAPI Backend\nAPI + SSE + Static UI]
+        DB[(SQLite / Postgres)]
+        LLM[Ollama llama3\nlocal, air-gapped]
+    end
+
+    User([SRE / Ops Engineer])
+
+    P  -- "scrape (PromQL)" --> API
+    AM -- "webhook push" --> API
+    OTEL -- "OTLP logs push" --> API
+    API <--> DB
+    API <-- "RCA / inference" --> LLM
+    User -- "HTTPS :8000\nSPA + SSE" --> API
+
+    classDef ext fill:#F1F5F9,stroke:#334155;
+    classDef core fill:#CFFAFE,stroke:#0E7490;
+    class P,AM,OTEL,User ext;
+    class API,DB,LLM core;

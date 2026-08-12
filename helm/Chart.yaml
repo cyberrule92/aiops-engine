@@ -1,0 +1,16 @@
+apiVersion: v2
+name: aiops-engine
+description: AI-powered AIOps anomaly detection, alert correlation, and RCA engine
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - aiops
+  - observability
+  - anomaly-detection
+  - kubernetes
+  - ollama
+home: https://github.com/your-org/aiops-engine
+maintainers:
+  - name: AIOps Team
+dependencies: []

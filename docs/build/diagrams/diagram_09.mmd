@@ -1,0 +1,20 @@
+sequenceDiagram
+    autonumber
+    participant L as anomaly-detector loop
+    participant MW as MetricWindow
+    participant DB as Database
+    participant BUS as EventBus
+    participant UI as UI
+
+    L->>MW: push(value, ts) per series
+    L->>MW: forecast(horizon_steps)  [Holt damped-trend]
+    MW->>MW: guard: min points / fit MAPE / flatness / confidence
+    alt breach predicted within horizon & cooldown ok
+        MW-->>L: {breach_at, band, confidence}
+        L->>DB: INSERT Anomaly(kind=predicted, prediction_status=pending)
+        L->>BUS: publish("anomalies", predicted)
+        BUS->>UI: purple "Predicted incidents" banner
+    end
+    Note over L: later sweeps
+    L->>L: _reconcile_predictions()
+    L->>DB: mark confirmed | expired

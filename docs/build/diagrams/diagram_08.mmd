@@ -1,0 +1,45 @@
+sequenceDiagram
+    autonumber
+    participant AM as Alertmanager
+    participant API as Webhook Router
+    participant ING as IngestionService
+    participant DB as Database
+    participant COR as CorrelationLoop
+    participant TOP as TopologyService
+    participant RCA as RCAService
+    participant LLM as Ollama
+    participant BUS as EventBus
+    participant UI as SSE/UI
+
+    AM->>API: POST /alerts/webhook/prometheus
+    API->>ING: ingest_alertmanager_payload()
+    ING->>ING: normalize + fingerprint
+    ING->>DB: dedup check (ALERT_DEDUP_WINDOW)
+    alt new alert
+        ING->>DB: INSERT Alert (firing)
+        ING->>BUS: publish("alerts", alert)
+        BUS->>UI: push event
+    end
+    Note over COR: every correlation window
+    COR->>DB: load recent alerts (CORRELATION_WINDOW_SECONDS)
+    COR->>COR: Union-Find cluster (_pair_score)
+    COR->>TOP: record_alerts() + learn_from_group()
+    TOP->>TOP: upsert edges (EWMA weight, decay)
+    COR->>TOP: rank_root_causes(entity_keys)
+    TOP-->>COR: causal root + subgraph
+    COR->>DB: UPSERT CorrelationGroup (signature dedup)
+    COR->>RCA: generate_correlation_inference()
+    RCA->>LLM: prompt (root + subgraph + alerts)
+    LLM-->>RCA: JSON inference (~75s)
+    RCA->>DB: store inference
+    COR->>BUS: publish("correlations", group)
+    BUS->>UI: push incident
+    UI->>API: POST /rca/generate (on demand)
+    API->>RCA: generate_rca_for_group()
+    RCA->>RCA: _find_existing_rca (dedup/cache)
+    alt cache miss
+        RCA->>LLM: RCA prompt
+        LLM-->>RCA: root_cause + remediation + confidence
+        RCA->>DB: INSERT RCAReport
+    end
+    RCA-->>UI: RCA result

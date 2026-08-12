@@ -1,0 +1,13 @@
+sequenceDiagram
+    autonumber
+    participant UI
+    participant API as SSE endpoint
+    participant BUS as EventBus
+    UI->>API: GET /alerts/stream (EventSource)
+    API->>BUS: subscribe("alerts") -> Queue
+    loop while connected
+        BUS-->>API: event
+        API-->>UI: data: {json}
+    end
+    UI->>API: disconnect
+    API->>BUS: unsubscribe()

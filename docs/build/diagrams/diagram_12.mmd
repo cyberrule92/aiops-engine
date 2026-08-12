@@ -1,0 +1,7 @@
+stateDiagram-v2
+    direction LR
+    [*] --> pending: predicted anomaly
+    pending --> confirmed: breach observed
+    pending --> expired: horizon passed, no breach
+    confirmed --> [*]
+    expired --> [*]

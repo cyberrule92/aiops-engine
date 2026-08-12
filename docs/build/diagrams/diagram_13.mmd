@@ -1,0 +1,16 @@
+flowchart TB
+    subgraph HA["Target HA topology"]
+        LB[Service / Ingress]
+        R1[backend replica 1\nAPI + SSE only]
+        R2[backend replica 2\nAPI + SSE only]
+        W[worker replica\nbackground loops\nleader-elected]
+        PG[(PostgreSQL\nprimary + replica)]
+        REDIS[(Redis / NATS\nevent bus + series state)]
+        OLL[Ollama pool\nGPU nodes]
+    end
+    LB --> R1 & R2
+    R1 & R2 <--> PG
+    R1 & R2 <--> REDIS
+    W <--> PG
+    W <--> REDIS
+    W --> OLL

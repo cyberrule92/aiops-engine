@@ -1,0 +1,72 @@
+classDiagram
+    class IngestionService {
+        +ingest_alert(dict) str
+        +ingest_alertmanager_payload(dict) list
+        +ingest_otel_payload(dict) list
+        +start_prometheus_scraper()
+        -_fingerprint(dict) str
+        -normalize_prometheus_alert(raw) dict
+        -normalize_otel_log(raw) dict
+    }
+    class AnomalyService {
+        +analyze_metric(name, value, labels) Anomaly?
+        +predict_metric(...) Anomaly?
+        +start_detection_loop()
+        -_scrape_and_detect()
+        -_reconcile_predictions()
+        -_resolve_targets() list
+    }
+    class MetricWindow {
+        +push(value, ts)
+        +train_iso()
+        +zscore(v) float
+        +iso_score(v) float
+        +ewma_deviation(v) float
+        +ensemble_score(v) (float, dict)
+        +forecast(steps) dict?
+    }
+    class AlertCorrelationService {
+        +correlate_alerts(list) list
+        +start_correlation_loop()
+        -_run_correlation()
+        -_pair_score(a,b) float
+        -_detect_pattern(list) str
+        -_infer_group(...)
+    }
+    class TopologyService {
+        +record_alerts(list)
+        +learn_from_group(ordered)
+        +rank_root_causes(keys) list
+        +get_subgraph(keys) dict
+        +decay_and_prune()
+        +get_graph(view) dict
+        +get_dependencies(key) dict
+    }
+    class RCAService {
+        +generate_rca(...) dict
+        +generate_rca_for_group(id) dict
+        +generate_correlation_inference(...) dict
+        -_call_ollama(ctx) str
+        -_find_existing_rca(...) RCAReport?
+    }
+    class EventBus {
+        +subscribe(channel) Queue
+        +publish(channel, data)
+        +publish_all(data)
+        +get_history(limit) list
+    }
+    class PrometheusClient {
+        +instant_query(q) list
+        +range_query(...) list
+        +get_active_alerts() list
+        +check_health() bool
+    }
+
+    AnomalyService "1" o-- "N" MetricWindow : per-series state
+    AnomalyService --> PrometheusClient
+    IngestionService --> EventBus
+    AnomalyService --> EventBus
+    AlertCorrelationService --> TopologyService
+    AlertCorrelationService --> RCAService
+    AlertCorrelationService --> EventBus
+    RCAService --> Ollama

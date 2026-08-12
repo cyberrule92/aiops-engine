@@ -1,0 +1,1 @@
+{"name":"aiops-doc-build","version":"1.0.0","private":true,"dependencies":{"@mermaid-js/mermaid-cli":"^10.9.1","puppeteer":"^23.11.1"}}

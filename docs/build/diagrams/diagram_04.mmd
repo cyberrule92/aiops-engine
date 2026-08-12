@@ -1,0 +1,30 @@
+flowchart TB
+    subgraph ns["Namespace: observability"]
+        subgraph dep["Deployment: aiops-backend"]
+            POD1[Pod: backend\nFastAPI+UI :8000]
+        end
+        SVC1[Service: backend ClusterIP]
+        subgraph olla["Deployment: ollama"]
+            POD2[Pod: ollama :11434\noptional GPU node]
+        end
+        SVC2[Service: ollama ClusterIP]
+        PVC[(PVC: model + db volume)]
+        PDB[PodDisruptionBudget]
+        RBAC[ServiceAccount + RBAC]
+    end
+
+    subgraph mon["Namespace: monitoring"]
+        PROM[Prometheus]
+        ALERT[Alertmanager]
+    end
+
+    ING[Ingress / port-forward] --> SVC1
+    SVC1 --> POD1
+    POD1 --> SVC2 --> POD2
+    POD2 --- PVC
+    POD1 --- PVC
+    ALERT -- webhook --> SVC1
+    POD1 -- scrape/PromQL --> PROM
+
+    classDef k8s fill:#ECFEFF,stroke:#0E7490;
+    class POD1,POD2,SVC1,SVC2,PVC,PDB,RBAC k8s;

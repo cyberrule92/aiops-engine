@@ -1,0 +1,2047 @@
+{{- /* ─── Frontend HTML ConfigMap ─── */}}
+{{- /* The index.html is stored here and copied into the nginx container via initContainer */}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "aiops-engine.fullname" . }}-frontend-html
+  labels: {{- include "aiops-engine.labels" . | nindent 4 }}
+  annotations:
+    # Large ConfigMap — consider using an OCI image layer for production
+    description: "AIOps Engine frontend SPA"
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AIOps Intelligence Engine</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+      :root {
+        --bg:        #080c10;
+        --bg-1:      #0d1117;
+        --bg-2:      #13181f;
+        --bg-3:      #1a2030;
+        --border:    #1e2a3a;
+        --border-2:  #243040;
+        --text:      #c9d1d9;
+        --text-2:    #8b949e;
+        --text-3:    #4a5568;
+        --accent:    #00d4ff;
+        --accent-2:  #0096ff;
+        --green:     #00e676;
+        --yellow:    #ffb300;
+        --orange:    #ff6d00;
+        --red:       #ff1744;
+        --purple:    #b388ff;
+        --glow:      rgba(0,212,255,0.15);
+        --font-mono: 'IBM Plex Mono', monospace;
+        --font-sans: 'IBM Plex Sans', sans-serif;
+      }
+    
+      * { margin:0; padding:0; box-sizing:border-box; }
+      html { height:100%; }
+    
+      body {
+        font-family: var(--font-sans);
+        background: var(--bg);
+        color: var(--text);
+        height: 100vh;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+    
+      /* ─── TOP NAV ─── */
+      .topbar {
+        display: flex;
+        align-items: center;
+        padding: 0 24px;
+        height: 52px;
+        background: var(--bg-1);
+        border-bottom: 1px solid var(--border);
+        flex-shrink: 0;
+        gap: 24px;
+        position: relative;
+        z-index: 100;
+      }
+      .logo {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        font-family: var(--font-mono);
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--accent);
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+      .logo-icon {
+        width: 28px; height: 28px;
+        background: linear-gradient(135deg, var(--accent-2), var(--accent));
+        border-radius: 6px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 14px;
+      }
+      .pulse-dot {
+        width: 7px; height: 7px;
+        background: var(--green);
+        border-radius: 50%;
+        box-shadow: 0 0 8px var(--green);
+        animation: pulse 2s infinite;
+        flex-shrink: 0;
+      }
+      @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.8)} }
+    
+      .nav-tabs {
+        display: flex;
+        gap: 2px;
+        flex: 1;
+      }
+      .nav-tab {
+        padding: 6px 16px;
+        border: none;
+        background: transparent;
+        color: var(--text-2);
+        font-family: var(--font-sans);
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        border-radius: 4px;
+        transition: all .15s;
+        letter-spacing: 0.02em;
+      }
+      .nav-tab:hover { background: var(--bg-3); color: var(--text); }
+      .nav-tab.active {
+        background: var(--bg-3);
+        color: var(--accent);
+        border-bottom: 2px solid var(--accent);
+      }
+    
+      .topbar-right {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-left: auto;
+      }
+      .status-chip {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        padding: 3px 8px;
+        border-radius: 3px;
+        border: 1px solid;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+      }
+      .status-ok   { color: var(--green);  border-color: rgba(0,230,118,.3); background: rgba(0,230,118,.05); }
+      .status-warn { color: var(--yellow); border-color: rgba(255,179,0,.3);  background: rgba(255,179,0,.05); }
+      .status-err  { color: var(--red);    border-color: rgba(255,23,68,.3);   background: rgba(255,23,68,.05); }
+    
+      /* ─── MAIN LAYOUT ─── */
+      .layout {
+        display: flex;
+        flex: 1;
+        overflow: hidden;
+      }
+    
+      /* ─── SIDEBAR ─── */
+      .sidebar {
+        width: 220px;
+        background: var(--bg-1);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        flex-shrink: 0;
+        overflow-y: auto;
+      }
+      .sidebar-section {
+        padding: 16px 12px 8px;
+      }
+      .sidebar-label {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--text-3);
+        padding: 0 8px;
+        margin-bottom: 6px;
+      }
+      .sidebar-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 7px 10px;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: all .12s;
+        font-size: 12.5px;
+        color: var(--text-2);
+        border: 1px solid transparent;
+      }
+      .sidebar-item:hover { background: var(--bg-3); color: var(--text); }
+      .sidebar-item.active {
+        background: var(--bg-3);
+        color: var(--accent);
+        border-color: var(--border-2);
+      }
+      .sidebar-item .icon { font-size: 13px; width:16px; text-align:center; }
+      .badge {
+        margin-left: auto;
+        background: rgba(255,23,68,.15);
+        color: var(--red);
+        border: 1px solid rgba(255,23,68,.3);
+        font-family: var(--font-mono);
+        font-size: 9px;
+        padding: 1px 5px;
+        border-radius: 3px;
+        min-width: 20px;
+        text-align: center;
+      }
+      .badge-warn { background: rgba(255,179,0,.1); color: var(--yellow); border-color: rgba(255,179,0,.3); }
+      .badge-blue { background: rgba(0,212,255,.08); color: var(--accent); border-color: rgba(0,212,255,.2); }
+    
+      /* ─── CONTENT ─── */
+      .content {
+        flex: 1;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
+      }
+    
+      /* ─── PAGES ─── */
+      .page { display: none; flex-direction: column; height: 100%; overflow: hidden; }
+      .page.active { display: flex; }
+    
+      /* ─── DASHBOARD PAGE ─── */
+      .dashboard-grid {
+        padding: 16px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-rows: auto auto 1fr;
+        gap: 12px;
+        height: 100%;
+        overflow-y: auto;
+      }
+    
+      /* KPI cards */
+      .kpi {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px;
+        position: relative;
+        overflow: hidden;
+        transition: border-color .15s;
+      }
+      .kpi:hover { border-color: var(--border-2); }
+      .kpi::before {
+        content:'';
+        position: absolute;
+        top:0; left:0; right:0;
+        height: 2px;
+        background: var(--kpi-color, var(--accent));
+        opacity: .7;
+      }
+      .kpi-label {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-3);
+        margin-bottom: 8px;
+      }
+      .kpi-value {
+        font-family: var(--font-mono);
+        font-size: 32px;
+        font-weight: 600;
+        line-height: 1;
+        color: var(--kpi-color, var(--accent));
+        margin-bottom: 6px;
+      }
+      .kpi-sub {
+        font-size: 11px;
+        color: var(--text-2);
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .kpi-trend { font-size: 10px; padding: 2px 5px; border-radius: 3px; }
+      .trend-up   { background: rgba(255,23,68,.1);  color: var(--red); }
+      .trend-down { background: rgba(0,230,118,.1); color: var(--green); }
+    
+      /* Panels */
+      .panel {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      .panel-header {
+        display: flex;
+        align-items: center;
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border);
+        gap: 8px;
+        flex-shrink: 0;
+      }
+      .panel-title {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--text-2);
+        flex: 1;
+      }
+      .panel-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0;
+      }
+    
+      /* Alert table */
+      .alert-table { width:100%; border-collapse: collapse; }
+      .alert-table th {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--text-3);
+        padding: 6px 12px;
+        text-align: left;
+        background: var(--bg-1);
+        border-bottom: 1px solid var(--border);
+        position: sticky; top: 0;
+      }
+      .alert-table td {
+        padding: 7px 12px;
+        font-size: 11.5px;
+        border-bottom: 1px solid rgba(30,42,58,.6);
+        vertical-align: middle;
+      }
+      .alert-table tr:hover td { background: var(--bg-3); }
+      .alert-table tr.new-row td { animation: fadeRow .5s ease; }
+      @keyframes fadeRow { from{background:rgba(0,212,255,.08)} to{background:transparent} }
+    
+      .sev-badge {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        font-weight: 600;
+        display: inline-block;
+      }
+      .sev-critical { background: rgba(255,23,68,.15);  color: var(--red);    border: 1px solid rgba(255,23,68,.3); }
+      .sev-warning  { background: rgba(255,179,0,.12); color: var(--yellow);  border: 1px solid rgba(255,179,0,.3); }
+      .sev-info     { background: rgba(0,212,255,.08); color: var(--accent); border: 1px solid rgba(0,212,255,.2); }
+    
+      .mono { font-family: var(--font-mono); font-size: 10.5px; }
+      .text-dim { color: var(--text-2); }
+      .text-muted { color: var(--text-3); }
+    
+      /* Anomaly score bar */
+      .score-bar-wrap { display:flex; align-items:center; gap:8px; }
+      .score-bar {
+        height: 4px;
+        border-radius: 2px;
+        background: var(--bg-3);
+        flex: 1;
+        overflow: hidden;
+      }
+      .score-bar-fill {
+        height: 100%;
+        border-radius: 2px;
+        transition: width .3s;
+      }
+      .score-val { font-family:var(--font-mono); font-size:10px; width:32px; text-align:right; }
+    
+      /* Correlation card */
+      .corr-card {
+        padding: 10px 14px;
+        border-bottom: 1px solid var(--border);
+        cursor: pointer;
+        transition: background .1s;
+      }
+      .corr-card:hover { background: var(--bg-3); }
+      .corr-pattern {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        padding: 2px 6px;
+        border-radius: 3px;
+        border: 1px solid;
+      }
+      .pat-cascade   { color: var(--orange); border-color: rgba(255,109,0,.3); background: rgba(255,109,0,.08); }
+      .pat-fan-out   { color: var(--purple); border-color: rgba(179,136,255,.3); background: rgba(179,136,255,.08); }
+      .pat-cluster   { color: var(--accent); border-color: rgba(0,212,255,.3); background: rgba(0,212,255,.08); }
+      .pat-degradation { color: var(--yellow); border-color: rgba(255,179,0,.3); background: rgba(255,179,0,.08); }
+    
+      /* RCA report card */
+      .rca-card {
+        padding: 14px;
+        border-bottom: 1px solid var(--border);
+      }
+      .rca-header {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+      .confidence-ring {
+        width: 44px; height: 44px;
+        flex-shrink: 0;
+        position: relative;
+      }
+      .confidence-ring svg { position:absolute; top:0; left:0; }
+      .conf-text {
+        position: absolute;
+        top: 50%; left: 50%;
+        transform: translate(-50%,-50%);
+        font-family: var(--font-mono);
+        font-size: 10px;
+        font-weight: 600;
+        color: var(--accent);
+      }
+      .rca-root-cause {
+        font-size: 12px;
+        line-height: 1.5;
+        color: var(--text);
+        margin-bottom: 8px;
+      }
+      .rca-steps {
+        list-style: none;
+      }
+      .rca-steps li {
+        font-size: 11px;
+        color: var(--text-2);
+        padding: 3px 0;
+        padding-left: 14px;
+        position: relative;
+      }
+      .rca-steps li::before {
+        content: '→';
+        position: absolute;
+        left: 0;
+        color: var(--accent);
+        font-family: var(--font-mono);
+      }
+    
+      /* ─── SOURCES PAGE ─── */
+      .sources-layout {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        padding: 16px;
+        height: 100%;
+        overflow-y: auto;
+        align-content: start;
+      }
+      .source-card {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px;
+        transition: border-color .15s;
+      }
+      .source-card:hover { border-color: var(--border-2); }
+      .source-card-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 12px;
+      }
+      .source-icon {
+        width: 36px; height: 36px;
+        border-radius: 8px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 18px;
+        background: var(--bg-3);
+        border: 1px solid var(--border-2);
+      }
+      .form-row { margin-bottom: 10px; }
+      .form-label {
+        display: block;
+        font-family: var(--font-mono);
+        font-size: 9px;
+        letter-spacing: .1em;
+        text-transform: uppercase;
+        color: var(--text-3);
+        margin-bottom: 4px;
+      }
+      .form-input {
+        width: 100%;
+        background: var(--bg-3);
+        border: 1px solid var(--border-2);
+        border-radius: 5px;
+        padding: 7px 10px;
+        font-family: var(--font-mono);
+        font-size: 11.5px;
+        color: var(--text);
+        outline: none;
+        transition: border-color .15s;
+      }
+      .form-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--glow); }
+      .form-input::placeholder { color: var(--text-3); }
+      .btn {
+        padding: 7px 16px;
+        border: none;
+        border-radius: 5px;
+        font-family: var(--font-sans);
+        font-size: 12px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all .15s;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .btn-primary {
+        background: linear-gradient(135deg, var(--accent-2), var(--accent));
+        color: #000;
+      }
+      .btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+      .btn-ghost {
+        background: transparent;
+        color: var(--text-2);
+        border: 1px solid var(--border-2);
+      }
+      .btn-ghost:hover { background: var(--bg-3); color: var(--text); }
+      .btn-danger {
+        background: rgba(255,23,68,.1);
+        color: var(--red);
+        border: 1px solid rgba(255,23,68,.3);
+      }
+      .btn-danger:hover { background: rgba(255,23,68,.2); }
+      .btn-sm { padding: 4px 10px; font-size: 11px; }
+    
+      .connected-sources { padding: 16px; }
+      .source-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+        background: var(--bg-3);
+        border-radius: 6px;
+        margin-bottom: 8px;
+        border: 1px solid var(--border);
+      }
+      .source-status-dot {
+        width: 8px; height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .dot-ok  { background: var(--green);  box-shadow: 0 0 6px var(--green); }
+      .dot-err { background: var(--red);    box-shadow: 0 0 6px var(--red); }
+      .dot-pen { background: var(--yellow); box-shadow: 0 0 6px var(--yellow); animation: pulse 1.5s infinite; }
+    
+      /* ─── METRICS PAGE ─── */
+      .metrics-layout {
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        padding: 16px;
+        gap: 12px;
+        overflow-y: auto;
+      }
+      .query-bar {
+        display: flex;
+        gap: 8px;
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 12px;
+      }
+      .query-bar .form-input { flex: 1; }
+      .metric-chart-container {
+        background: var(--bg-2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px;
+        min-height: 200px;
+        position: relative;
+      }
+      canvas.chart { width: 100% !important; max-height: 180px; }
+    
+      /* Scrollbars */
+      ::-webkit-scrollbar { width: 5px; height: 5px; }
+      ::-webkit-scrollbar-track { background: var(--bg-1); }
+      ::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+      ::-webkit-scrollbar-thumb:hover { background: #2d3f55; }
+    
+      /* ─── LIVE FEED TICKER ─── */
+      .live-feed {
+        position: fixed;
+        bottom: 0; left: 0; right: 0;
+        height: 30px;
+        background: var(--bg-1);
+        border-top: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        overflow: hidden;
+        z-index: 200;
+      }
+      .feed-label {
+        padding: 0 12px;
+        font-family: var(--font-mono);
+        font-size: 9px;
+        letter-spacing: .12em;
+        text-transform: uppercase;
+        color: var(--accent);
+        border-right: 1px solid var(--border);
+        white-space: nowrap;
+        flex-shrink: 0;
+      }
+      .feed-scroll {
+        flex: 1;
+        overflow: hidden;
+        position: relative;
+      }
+      .feed-inner {
+        display: flex;
+        gap: 40px;
+        animation: tickerScroll 40s linear infinite;
+        white-space: nowrap;
+      }
+      .feed-inner:hover { animation-play-state: paused; }
+      @keyframes tickerScroll {
+        from { transform: translateX(0); }
+        to   { transform: translateX(-50%); }
+      }
+      .feed-event {
+        font-family: var(--font-mono);
+        font-size: 10px;
+        color: var(--text-2);
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .feed-event .dot { width:5px; height:5px; border-radius:50%; flex-shrink:0; }
+    
+      /* Grid spans */
+      .col-span-2 { grid-column: span 2; }
+      .col-span-3 { grid-column: span 3; }
+      .col-span-4 { grid-column: span 4; }
+      .row-span-2 { grid-row: span 2; }
+    
+      /* RCA modal */
+      .modal-overlay {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.7);
+        z-index: 500;
+        align-items: center;
+        justify-content: center;
+      }
+      .modal-overlay.open { display: flex; }
+      .modal {
+        background: var(--bg-2);
+        border: 1px solid var(--border-2);
+        border-radius: 10px;
+        width: 640px;
+        max-width: 95vw;
+        max-height: 85vh;
+        overflow-y: auto;
+        box-shadow: 0 24px 80px rgba(0,0,0,.6);
+        animation: modalIn .2s ease;
+      }
+      @keyframes modalIn { from{opacity:0;transform:scale(.97)} to{opacity:1;transform:scale(1)} }
+      .modal-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        position: sticky;
+        top: 0;
+        background: var(--bg-2);
+      }
+      .modal-body { padding: 20px; }
+      .modal-title {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        color: var(--accent);
+        flex: 1;
+      }
+      .close-btn {
+        background: none;
+        border: none;
+        color: var(--text-2);
+        cursor: pointer;
+        font-size: 18px;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+      .close-btn:hover { background: var(--bg-3); color: var(--text); }
+    
+      .loading-spinner {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        gap: 12px;
+        color: var(--text-2);
+        font-size: 12px;
+      }
+      .spinner {
+        width: 32px; height: 32px;
+        border: 2px solid var(--border-2);
+        border-top-color: var(--accent);
+        border-radius: 50%;
+        animation: spin .8s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+    
+      .tag-list { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+      .tag {
+        font-family: var(--font-mono);
+        font-size: 9px;
+        padding: 2px 6px;
+        border-radius: 3px;
+        background: var(--bg-3);
+        border: 1px solid var(--border-2);
+        color: var(--text-2);
+      }
+    
+      .divider {
+        height: 1px;
+        background: var(--border);
+        margin: 12px 0;
+      }
+    
+      /* mini sparkline using canvas */
+      .sparkline { height: 28px; }
+    
+      /* Empty state */
+      .empty-state {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 40px;
+        gap: 8px;
+        color: var(--text-3);
+        font-size: 12px;
+        text-align: center;
+      }
+      .empty-state .icon { font-size: 28px; margin-bottom: 4px; }
+    
+      .mb-2 { margin-bottom: 8px; }
+      .mb-3 { margin-bottom: 12px; }
+      .flex { display: flex; }
+      .items-center { align-items: center; }
+      .gap-2 { gap: 8px; }
+      .text-sm { font-size: 11.5px; }
+      .text-xs { font-size: 10.5px; }
+      .font-mono { font-family: var(--font-mono); }
+      .color-green { color: var(--green); }
+      .color-red { color: var(--red); }
+      .color-yellow { color: var(--yellow); }
+      .color-accent { color: var(--accent); }
+      .color-purple { color: var(--purple); }
+      .mt-auto { margin-top: auto; }
+      .w-full { width: 100%; }
+    </style>
+    </head>
+    <body>
+    
+    <!-- TOP BAR -->
+    <div class="topbar">
+      <div class="logo">
+        <div class="logo-icon">⚡</div>
+        AIOPS ENGINE
+      </div>
+      <div class="pulse-dot"></div>
+    
+      <div class="nav-tabs">
+        <button class="nav-tab active" onclick="showTab('dashboard')">Dashboard</button>
+        <button class="nav-tab" onclick="showTab('alerts')">Alerts</button>
+        <button class="nav-tab" onclick="showTab('anomalies')">Anomalies</button>
+        <button class="nav-tab" onclick="showTab('correlation')">Correlation</button>
+        <button class="nav-tab" onclick="showTab('rca')">RCA Reports</button>
+        <button class="nav-tab" onclick="showTab('metrics')">Metrics</button>
+        <button class="nav-tab" onclick="showTab('sources')">Sources</button>
+      </div>
+    
+      <div class="topbar-right">
+        <span class="status-chip status-ok" id="ollama-status">OLLAMA: OK</span>
+        <span class="status-chip status-ok" id="prom-status">PROM: OK</span>
+        <span class="status-chip status-ok" id="otel-status">OTEL: OK</span>
+      </div>
+    </div>
+    
+    <!-- MAIN -->
+    <div class="layout" style="margin-bottom:30px;">
+    
+      <!-- SIDEBAR -->
+      <div class="sidebar">
+        <div class="sidebar-section">
+          <div class="sidebar-label">Severity</div>
+          <div class="sidebar-item active" onclick="filterSeverity('all', this)">
+            <span class="icon">◈</span> All Alerts
+            <span class="badge blue" id="count-all">0</span>
+          </div>
+          <div class="sidebar-item" onclick="filterSeverity('critical', this)">
+            <span class="icon" style="color:var(--red)">◉</span> Critical
+            <span class="badge" id="count-critical">0</span>
+          </div>
+          <div class="sidebar-item" onclick="filterSeverity('warning', this)">
+            <span class="icon" style="color:var(--yellow)">◉</span> Warning
+            <span class="badge badge-warn" id="count-warning">0</span>
+          </div>
+          <div class="sidebar-item" onclick="filterSeverity('info', this)">
+            <span class="icon" style="color:var(--accent)">◉</span> Info
+            <span class="badge badge-blue" id="count-info">0</span>
+          </div>
+        </div>
+    
+        <div class="sidebar-section">
+          <div class="sidebar-label">Analysis</div>
+          <div class="sidebar-item" onclick="showTab('anomalies')">
+            <span class="icon">📈</span> Anomalies
+            <span class="badge badge-warn" id="sb-anomalies">0</span>
+          </div>
+          <div class="sidebar-item" onclick="showTab('correlation')">
+            <span class="icon">🔗</span> Groups
+            <span class="badge badge-blue" id="sb-groups">0</span>
+          </div>
+          <div class="sidebar-item" onclick="showTab('rca')">
+            <span class="icon">🧠</span> RCA Reports
+            <span class="badge badge-blue" id="sb-rca">0</span>
+          </div>
+        </div>
+    
+        <div class="sidebar-section">
+          <div class="sidebar-label">Sources</div>
+          <div id="sidebar-sources">
+            <div class="sidebar-item text-muted text-xs">No sources configured</div>
+          </div>
+        </div>
+    
+        <div class="mt-auto" style="padding:12px;">
+          <button class="btn btn-ghost w-full btn-sm" onclick="refreshAll()">↻ Refresh</button>
+        </div>
+      </div>
+    
+      <!-- CONTENT -->
+      <div class="content">
+    
+        <!-- ░░ DASHBOARD PAGE ░░ -->
+        <div class="page active" id="page-dashboard">
+          <div class="dashboard-grid">
+    
+            <!-- KPIs -->
+            <div class="kpi" style="--kpi-color:var(--red)">
+              <div class="kpi-label">Firing Alerts</div>
+              <div class="kpi-value" id="kpi-firing">0</div>
+              <div class="kpi-sub">
+                <span id="kpi-firing-delta" class="kpi-trend trend-up">+0</span>
+                last 15 min
+              </div>
+            </div>
+            <div class="kpi" style="--kpi-color:var(--yellow)">
+              <div class="kpi-label">Anomalies Detected</div>
+              <div class="kpi-value" id="kpi-anomalies">0</div>
+              <div class="kpi-sub text-dim text-xs">ensemble score ≥ 0.6</div>
+            </div>
+            <div class="kpi" style="--kpi-color:var(--purple)">
+              <div class="kpi-label">Correlation Groups</div>
+              <div class="kpi-value" id="kpi-groups">0</div>
+              <div class="kpi-sub text-dim text-xs">within 5-min window</div>
+            </div>
+            <div class="kpi" style="--kpi-color:var(--green)">
+              <div class="kpi-label">RCA Reports</div>
+              <div class="kpi-value" id="kpi-rca">0</div>
+              <div class="kpi-sub text-dim text-xs">Ollama · llama3</div>
+            </div>
+    
+            <!-- Recent Alerts panel (2 cols) -->
+            <div class="panel col-span-2" style="height:320px;">
+              <div class="panel-header">
+                <span class="panel-title">🔔 Recent Alerts</span>
+                <button class="btn btn-ghost btn-sm" onclick="showTab('alerts')">View all →</button>
+              </div>
+              <div class="panel-body">
+                <table class="alert-table" id="dash-alert-table">
+                  <thead>
+                    <tr>
+                      <th>Severity</th>
+                      <th>Alert Name</th>
+                      <th>Namespace</th>
+                      <th>Service</th>
+                      <th>Source</th>
+                      <th>Time</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dash-alerts-body">
+                    <tr><td colspan="6"><div class="empty-state"><span class="icon">🔕</span>No alerts yet</div></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+    
+            <!-- Top Anomalies panel (2 cols) -->
+            <div class="panel col-span-2" style="height:320px;">
+              <div class="panel-header">
+                <span class="panel-title">📊 Top Anomalies</span>
+                <button class="btn btn-ghost btn-sm" onclick="showTab('anomalies')">View all →</button>
+              </div>
+              <div class="panel-body">
+                <table class="alert-table" id="dash-anomaly-table">
+                  <thead>
+                    <tr>
+                      <th>Metric</th>
+                      <th>Score</th>
+                      <th>Value</th>
+                      <th>Deviation</th>
+                      <th>Service</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dash-anomalies-body">
+                    <tr><td colspan="5"><div class="empty-state"><span class="icon">📈</span>No anomalies yet</div></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+    
+            <!-- Correlation Groups panel (2 cols) -->
+            <div class="panel col-span-2" style="height:280px;">
+              <div class="panel-header">
+                <span class="panel-title">🔗 Correlation Groups</span>
+                <button class="btn btn-ghost btn-sm" onclick="showTab('correlation')">View all →</button>
+              </div>
+              <div class="panel-body" id="dash-corr-list">
+                <div class="empty-state"><span class="icon">🔗</span>No groups yet</div>
+              </div>
+            </div>
+    
+            <!-- Latest RCA panel (2 cols) -->
+            <div class="panel col-span-2" style="height:280px;">
+              <div class="panel-header">
+                <span class="panel-title">🧠 Latest RCA</span>
+                <button class="btn btn-ghost btn-sm" onclick="showTab('rca')">View all →</button>
+              </div>
+              <div class="panel-body" id="dash-rca-list">
+                <div class="empty-state"><span class="icon">🧠</span>No RCA reports yet</div>
+              </div>
+            </div>
+    
+          </div>
+        </div>
+    
+        <!-- ░░ ALERTS PAGE ░░ -->
+        <div class="page" id="page-alerts">
+          <div style="padding:12px 16px; border-bottom:1px solid var(--border); display:flex; gap:8px; align-items:center; flex-shrink:0;">
+            <input class="form-input" style="max-width:280px;" id="alert-search" placeholder="Search alerts…" oninput="renderAlertsPage()">
+            <select class="form-input" style="max-width:140px;" id="alert-sev-filter" onchange="renderAlertsPage()">
+              <option value="">All severities</option>
+              <option value="critical">Critical</option>
+              <option value="warning">Warning</option>
+              <option value="info">Info</option>
+            </select>
+            <select class="form-input" style="max-width:140px;" id="alert-src-filter" onchange="renderAlertsPage()">
+              <option value="">All sources</option>
+              <option value="prometheus">Prometheus</option>
+              <option value="otel">OTEL</option>
+            </select>
+            <span class="mono text-dim text-xs" id="alert-count-label">0 alerts</span>
+            <button class="btn btn-ghost btn-sm" style="margin-left:auto;" onclick="loadAlerts()">↻</button>
+          </div>
+          <div style="flex:1;overflow-y:auto;">
+            <table class="alert-table">
+              <thead>
+                <tr>
+                  <th>Severity</th>
+                  <th>Name</th>
+                  <th>Status</th>
+                  <th>Namespace</th>
+                  <th>Service</th>
+                  <th>Node</th>
+                  <th>Source</th>
+                  <th>Started</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="alerts-page-body">
+                <tr><td colspan="9"><div class="empty-state"><span class="icon">🔕</span>Loading alerts…</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+    
+        <!-- ░░ ANOMALIES PAGE ░░ -->
+        <div class="page" id="page-anomalies">
+          <div style="padding:12px 16px; border-bottom:1px solid var(--border); display:flex; gap:8px; align-items:center; flex-shrink:0;">
+            <input class="form-input" style="max-width:280px;" id="anom-search" placeholder="Search metrics…" oninput="renderAnomaliesPage()">
+            <input type="range" min="0" max="100" value="0" id="anom-score-filter" oninput="document.getElementById('anom-score-val').textContent=this.value/100;renderAnomaliesPage()" style="width:120px;accent-color:var(--accent)">
+            <span class="mono text-xs color-accent" id="anom-score-val">0.00</span>
+            <span class="mono text-dim text-xs">min score</span>
+            <button class="btn btn-ghost btn-sm" style="margin-left:auto;" onclick="loadAnomalies()">↻</button>
+          </div>
+          <div style="flex:1;overflow-y:auto;">
+            <table class="alert-table">
+              <thead>
+                <tr>
+                  <th>Metric</th>
+                  <th>Score</th>
+                  <th>Z-Score</th>
+                  <th>Value</th>
+                  <th>Baseline</th>
+                  <th>Deviation</th>
+                  <th>Service</th>
+                  <th>Namespace</th>
+                  <th>Detected</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="anomalies-page-body">
+                <tr><td colspan="10"><div class="empty-state"><span class="icon">📈</span>Loading anomalies…</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+    
+        <!-- ░░ CORRELATION PAGE ░░ -->
+        <div class="page" id="page-correlation">
+          <div style="padding:12px 16px; border-bottom:1px solid var(--border); display:flex; gap:8px; align-items:center; flex-shrink:0;">
+            <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-2);">Alert Correlation Groups — temporal + label + semantic clustering</span>
+            <button class="btn btn-primary btn-sm" style="margin-left:auto;" onclick="triggerCorrelation()">⚡ Run Correlation</button>
+            <button class="btn btn-ghost btn-sm" onclick="loadCorrelations()">↻</button>
+          </div>
+          <div style="flex:1;overflow-y:auto;padding:16px;" id="corr-page-body">
+            <div class="empty-state"><span class="icon">🔗</span>Loading groups…</div>
+          </div>
+        </div>
+    
+        <!-- ░░ RCA PAGE ░░ -->
+        <div class="page" id="page-rca">
+          <div style="padding:12px 16px; border-bottom:1px solid var(--border); display:flex; gap:8px; align-items:center; flex-shrink:0;">
+            <span style="font-family:var(--font-mono);font-size:11px;color:var(--text-2);">Root Cause Analysis — Powered by Ollama LLM (llama3)</span>
+            <button class="btn btn-primary btn-sm" style="margin-left:auto;" onclick="openRCAModal()">+ Generate RCA</button>
+            <button class="btn btn-ghost btn-sm" onclick="loadRCA()">↻</button>
+          </div>
+          <div style="flex:1;overflow-y:auto;padding:16px;" id="rca-page-body">
+            <div class="empty-state"><span class="icon">🧠</span>Loading reports…</div>
+          </div>
+        </div>
+    
+        <!-- ░░ METRICS PAGE ░░ -->
+        <div class="page" id="page-metrics">
+          <div class="metrics-layout">
+            <div class="query-bar">
+              <div style="flex:1;">
+                <div class="form-label">PromQL Query</div>
+                <input class="form-input" id="promql-input" placeholder='e.g. rate(http_requests_total[5m])' value="up">
+              </div>
+              <div>
+                <div class="form-label">Range</div>
+                <select class="form-input" id="metrics-range" style="width:120px;">
+                  <option value="1h">Last 1h</option>
+                  <option value="3h">Last 3h</option>
+                  <option value="6h">Last 6h</option>
+                  <option value="24h">Last 24h</option>
+                </select>
+              </div>
+              <div style="display:flex;align-items:flex-end;">
+                <button class="btn btn-primary" onclick="runQuery()">▶ Execute</button>
+              </div>
+            </div>
+    
+            <div class="metric-chart-container">
+              <div class="panel-header" style="padding:0;border:none;margin-bottom:12px;">
+                <span class="panel-title" id="chart-title">Query results</span>
+                <span class="mono text-xs text-dim" id="chart-meta"></span>
+              </div>
+              <canvas id="metric-chart" class="chart"></canvas>
+              <div id="chart-empty" class="empty-state" style="display:none;">
+                <span class="icon">📉</span>Execute a query to see data
+              </div>
+            </div>
+    
+            <div class="panel" style="height:220px;">
+              <div class="panel-header">
+                <span class="panel-title">Available Metrics</span>
+                <input class="form-input btn-sm" style="max-width:200px;" id="metrics-search" placeholder="Filter metrics…" oninput="filterMetrics()">
+              </div>
+              <div class="panel-body" id="metrics-list" style="padding:8px;display:flex;flex-wrap:wrap;gap:4px;align-content:flex-start;">
+                <div class="text-muted text-xs" style="padding:8px;">Loading metric names…</div>
+              </div>
+            </div>
+          </div>
+        </div>
+    
+        <!-- ░░ SOURCES PAGE ░░ -->
+        <div class="page" id="page-sources">
+          <div class="sources-layout">
+    
+            <!-- Prometheus connect card -->
+            <div class="source-card">
+              <div class="source-card-header">
+                <div class="source-icon">🔥</div>
+                <div>
+                  <div style="font-weight:600;font-size:13px;">Connect Prometheus</div>
+                  <div class="text-dim text-xs">Alertmanager + PromQL scraping</div>
+                </div>
+              </div>
+              <div class="form-row">
+                <label class="form-label">Name</label>
+                <input class="form-input" id="prom-name" placeholder="My Prometheus" value="Prometheus">
+              </div>
+              <div class="form-row">
+                <label class="form-label">Endpoint URL</label>
+                <input class="form-input" id="prom-url" placeholder="http://prometheus:9090" value="http://prometheus:9090">
+              </div>
+              <div class="form-row">
+                <label class="form-label">Alertmanager URL (optional)</label>
+                <input class="form-input" id="prom-am-url" placeholder="http://alertmanager:9093">
+              </div>
+              <button class="btn btn-primary w-full" onclick="connectPrometheus()">
+                ⚡ Connect & Test
+              </button>
+            </div>
+    
+            <!-- OTEL connect card -->
+            <div class="source-card">
+              <div class="source-card-header">
+                <div class="source-icon">📡</div>
+                <div>
+                  <div style="font-weight:600;font-size:13px;">Connect OTEL Collector</div>
+                  <div class="text-dim text-xs">OTLP HTTP/gRPC log ingestion</div>
+                </div>
+              </div>
+              <div class="form-row">
+                <label class="form-label">Name</label>
+                <input class="form-input" id="otel-name" placeholder="My OTEL Collector" value="OTEL Collector">
+              </div>
+              <div class="form-row">
+                <label class="form-label">HTTP Endpoint</label>
+                <input class="form-input" id="otel-http-url" placeholder="http://otel-collector:4318" value="http://otel-collector:4318">
+              </div>
+              <div class="form-row">
+                <label class="form-label">Webhook path (send logs here)</label>
+                <input class="form-input" value="/api/v1/alerts/webhook/otel" readonly style="color:var(--accent);">
+              </div>
+              <button class="btn btn-primary w-full" onclick="connectOTEL()">
+                ⚡ Connect & Test
+              </button>
+            </div>
+    
+            <!-- Webhook info card -->
+            <div class="source-card">
+              <div class="source-card-header">
+                <div class="source-icon">🪝</div>
+                <div>
+                  <div style="font-weight:600;font-size:13px;">Webhook Endpoints</div>
+                  <div class="text-dim text-xs">Point your alert sources here</div>
+                </div>
+              </div>
+              <div class="form-row">
+                <label class="form-label">Alertmanager webhook</label>
+                <input class="form-input" value="POST /api/v1/alerts/webhook/prometheus" readonly style="font-size:10.5px;color:var(--green);">
+              </div>
+              <div class="form-row">
+                <label class="form-label">OTEL log receiver</label>
+                <input class="form-input" value="POST /api/v1/alerts/webhook/otel" readonly style="font-size:10.5px;color:var(--green);">
+              </div>
+              <div style="background:var(--bg-3);border-radius:6px;padding:10px;font-family:var(--font-mono);font-size:10px;color:var(--text-2);line-height:1.7;border:1px solid var(--border);">
+                # Alertmanager config.yml<br>
+                receivers:<br>
+                &nbsp;&nbsp;- name: aiops<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;webhook_configs:<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;- url: http://aiops-engine:8000/<br>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;api/v1/alerts/webhook/prometheus
+              </div>
+            </div>
+    
+            <!-- Connected sources -->
+            <div class="source-card">
+              <div class="source-card-header">
+                <div class="source-icon">🗂</div>
+                <div>
+                  <div style="font-weight:600;font-size:13px;">Connected Sources</div>
+                  <div class="text-dim text-xs" id="sources-count">0 sources</div>
+                </div>
+              </div>
+              <div id="sources-list">
+                <div class="empty-state" style="padding:20px;"><span class="icon">🔌</span>No sources yet</div>
+              </div>
+              <button class="btn btn-ghost btn-sm w-full" style="margin-top:8px;" onclick="loadSources()">↻ Refresh</button>
+            </div>
+    
+          </div>
+        </div>
+    
+      </div><!-- /content -->
+    </div><!-- /layout -->
+    
+    <!-- LIVE FEED -->
+    <div class="live-feed">
+      <div class="feed-label">⚡ LIVE</div>
+      <div class="feed-scroll">
+        <div class="feed-inner" id="feed-inner">
+          <span class="feed-event"><span class="dot" style="background:var(--text-3)"></span>Waiting for events…</span>
+          <span class="feed-event"><span class="dot" style="background:var(--text-3)"></span>Connect a Prometheus or OTEL source to begin</span>
+        </div>
+      </div>
+    </div>
+    
+    <!-- RCA GENERATE MODAL -->
+    <div class="modal-overlay" id="rca-modal">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">🧠 Generate RCA Report</span>
+          <button class="close-btn" onclick="closeRCAModal()">✕</button>
+        </div>
+        <div class="modal-body" id="rca-modal-body">
+          <div class="form-row">
+            <label class="form-label">Correlation Group ID (optional)</label>
+            <input class="form-input" id="rca-group-id" placeholder="Leave blank to use recent alerts">
+          </div>
+          <div class="form-row">
+            <label class="form-label">Extra Context (optional)</label>
+            <input class="form-input" id="rca-context" placeholder="e.g. deployment at 14:30, node drain scheduled">
+          </div>
+          <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+            <button class="btn btn-ghost" onclick="closeRCAModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="generateRCA()">⚡ Analyze with Ollama</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- ALERT DETAIL MODAL -->
+    <div class="modal-overlay" id="alert-modal">
+      <div class="modal">
+        <div class="modal-header">
+          <span class="modal-title">🔔 Alert Detail</span>
+          <button class="close-btn" onclick="document.getElementById('alert-modal').classList.remove('open')">✕</button>
+        </div>
+        <div class="modal-body" id="alert-modal-body"></div>
+      </div>
+    </div>
+    
+    <script>
+    // ─────────────────────────────────────────────
+    // STATE
+    // ─────────────────────────────────────────────
+    const API = '';  // same origin; change to http://aiops-engine-backend-svc:8000 if needed
+    
+    let state = {
+      alerts: [],
+      anomalies: [],
+      correlations: [],
+      rcaReports: [],
+      sources: [],
+      metrics: [],
+      chartInstance: null,
+      activeFilter: 'all',
+    };
+    
+    let feedEvents = [];
+    
+    // ─────────────────────────────────────────────
+    // NAVIGATION
+    // ─────────────────────────────────────────────
+    function showTab(tab) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('page-' + tab).classList.add('active');
+      const tabs = ['dashboard','alerts','anomalies','correlation','rca','metrics','sources'];
+      const idx = tabs.indexOf(tab);
+      document.querySelectorAll('.nav-tab')[idx]?.classList.add('active');
+    
+      if (tab === 'alerts')      renderAlertsPage();
+      if (tab === 'anomalies')   renderAnomaliesPage();
+      if (tab === 'correlation') renderCorrelationPage();
+      if (tab === 'rca')         renderRCAPage();
+      if (tab === 'metrics')     loadMetricsList();
+      if (tab === 'sources')     loadSources();
+    }
+    
+    // ─────────────────────────────────────────────
+    // API CALLS
+    // ─────────────────────────────────────────────
+    async function apiFetch(path, opts = {}) {
+      try {
+        const r = await fetch(API + path, { ...opts, headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) } });
+        if (!r.ok) return null;
+        return await r.json();
+      } catch(e) {
+        return null;
+      }
+    }
+    
+    async function loadAlerts() {
+      const data = await apiFetch('/api/v1/alerts?limit=200');
+      if (data) {
+        state.alerts = data;
+        updateAlertCounts();
+        renderDashboardAlerts();
+        renderAlertsPage();
+      }
+    }
+    
+    async function loadAnomalies() {
+      const data = await apiFetch('/api/v1/anomalies?limit=200');
+      if (data) {
+        state.anomalies = data;
+        renderDashboardAnomalies();
+        renderAnomaliesPage();
+        document.getElementById('sb-anomalies').textContent = data.length;
+      }
+    }
+    
+    async function loadCorrelations() {
+      const data = await apiFetch('/api/v1/correlations?limit=100');
+      if (data) {
+        state.correlations = data;
+        renderDashboardCorr();
+        renderCorrelationPage();
+        document.getElementById('sb-groups').textContent = data.length;
+        document.getElementById('kpi-groups').textContent = data.length;
+      }
+    }
+    
+    async function loadRCA() {
+      const data = await apiFetch('/api/v1/rca?limit=50');
+      if (data) {
+        state.rcaReports = data;
+        renderDashboardRCA();
+        renderRCAPage();
+        document.getElementById('sb-rca').textContent = data.length;
+        document.getElementById('kpi-rca').textContent = data.length;
+      }
+    }
+    
+    async function loadSources() {
+      const data = await apiFetch('/api/v1/sources');
+      if (data) {
+        state.sources = data;
+        renderSourcesList();
+        renderSidebarSources();
+        document.getElementById('sources-count').textContent = data.length + ' source' + (data.length !== 1 ? 's' : '');
+      }
+    }
+    
+    async function loadHealth() {
+      const data = await apiFetch('/api/v1/health/full');
+      if (!data) return;
+      const { checks = {} } = data;
+      setStatusChip('ollama-status', 'OLLAMA', checks.ollama);
+      setStatusChip('prom-status', 'PROM', checks.prometheus);
+      setStatusChip('otel-status', 'OTEL', checks.alertmanager || 'ok');
+    }
+    
+    function setStatusChip(id, label, status) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const cls = status === 'ok' ? 'status-ok' : status === 'unreachable' ? 'status-err' : 'status-warn';
+      el.className = 'status-chip ' + cls;
+      el.textContent = label + ': ' + (status || 'N/A').toUpperCase();
+    }
+    
+    async function loadMetricsList() {
+      const data = await apiFetch('/api/v1/metrics/list');
+      if (data) {
+        state.metrics = data.metrics || [];
+        renderMetricsList(state.metrics);
+      }
+    }
+    
+    async function refreshAll() {
+      await Promise.all([loadAlerts(), loadAnomalies(), loadCorrelations(), loadRCA(), loadHealth()]);
+    }
+    
+    // ─────────────────────────────────────────────
+    // COUNTS + KPIs
+    // ─────────────────────────────────────────────
+    function updateAlertCounts() {
+      const all = state.alerts;
+      const firing = all.filter(a => a.status === 'firing');
+      const crit = all.filter(a => a.severity === 'critical');
+      const warn = all.filter(a => a.severity === 'warning');
+      const info = all.filter(a => a.severity === 'info');
+    
+      document.getElementById('count-all').textContent     = all.length;
+      document.getElementById('count-critical').textContent = crit.length;
+      document.getElementById('count-warning').textContent  = warn.length;
+      document.getElementById('count-info').textContent     = info.length;
+      document.getElementById('kpi-firing').textContent     = firing.length;
+      document.getElementById('kpi-anomalies').textContent  = state.anomalies.length;
+      document.getElementById('alert-count-label').textContent = all.length + ' alerts';
+    }
+    
+    // ─────────────────────────────────────────────
+    // DASHBOARD RENDERERS
+    // ─────────────────────────────────────────────
+    function renderDashboardAlerts() {
+      const tbody = document.getElementById('dash-alerts-body');
+      const alerts = state.alerts.slice(0, 12);
+      if (!alerts.length) {
+        tbody.innerHTML = '<tr><td colspan="6"><div class="empty-state"><span class="icon">🔕</span>No alerts yet</div></td></tr>';
+        return;
+      }
+      tbody.innerHTML = alerts.map(a => `
+        <tr>
+          <td><span class="sev-badge sev-${a.severity}">${a.severity}</span></td>
+          <td class="mono" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.name}</td>
+          <td class="text-dim text-xs">${a.namespace || '—'}</td>
+          <td class="text-dim text-xs">${a.service || '—'}</td>
+          <td class="text-xs"><span class="tag">${a.source_type}</span></td>
+          <td class="mono text-dim text-xs">${fmtTime(a.starts_at)}</td>
+        </tr>`).join('');
+    }
+    
+    function renderDashboardAnomalies() {
+      const tbody = document.getElementById('dash-anomalies-body');
+      const items = state.anomalies.slice(0, 12);
+      if (!items.length) {
+        tbody.innerHTML = '<tr><td colspan="5"><div class="empty-state"><span class="icon">📈</span>No anomalies yet</div></td></tr>';
+        return;
+      }
+      tbody.innerHTML = items.map(a => `
+        <tr>
+          <td class="mono text-xs" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;">${a.metric_name}</td>
+          <td>${scoreBar(a.score)}</td>
+          <td class="mono text-xs">${a.metric_value !== null ? Number(a.metric_value).toExponential(3) : '—'}</td>
+          <td class="mono text-xs ${a.deviation_pct > 0 ? 'color-red' : 'color-green'}">${a.deviation_pct !== null ? (a.deviation_pct > 0 ? '+' : '') + a.deviation_pct.toFixed(1) + '%' : '—'}</td>
+          <td class="text-dim text-xs">${a.service || '—'}</td>
+        </tr>`).join('');
+    }
+    
+    function renderDashboardCorr() {
+      const el = document.getElementById('dash-corr-list');
+      if (!state.correlations.length) {
+        el.innerHTML = '<div class="empty-state"><span class="icon">🔗</span>No groups yet</div>';
+        return;
+      }
+      el.innerHTML = state.correlations.slice(0, 6).map(g => `
+        <div class="corr-card" onclick="openCorrDetail('${g.id}')">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="corr-pattern pat-${g.pattern.replace(/[^a-z-]/g,'')}">${g.pattern}</span>
+            <span class="mono text-xs color-accent">${(g.similarity_score*100).toFixed(0)}% sim</span>
+            <span class="mono text-xs text-dim" style="margin-left:auto;">${fmtTime(g.created_at)}</span>
+          </div>
+          <div class="flex gap-2">
+            <span class="tag">${(g.alert_ids||[]).length} alerts</span>
+            ${(g.labels?.namespaces||[]).slice(0,3).map(ns=>`<span class="tag">${ns}</span>`).join('')}
+            ${(g.labels?.services||[]).slice(0,2).map(s=>`<span class="tag" style="color:var(--accent);">${s}</span>`).join('')}
+          </div>
+        </div>`).join('');
+    }
+    
+    function renderDashboardRCA() {
+      const el = document.getElementById('dash-rca-list');
+      if (!state.rcaReports.length) {
+        el.innerHTML = '<div class="empty-state"><span class="icon">🧠</span>No RCA reports yet</div>';
+        return;
+      }
+      el.innerHTML = state.rcaReports.slice(0, 3).map(r => `
+        <div class="rca-card">
+          <div class="rca-header">
+            ${confidenceRing(r.confidence)}
+            <div style="flex:1;">
+              <div class="rca-root-cause">${r.root_cause}</div>
+              <div class="flex items-center gap-2">
+                <span class="tag">${r.llm_model}</span>
+                <span class="mono text-xs text-dim">${fmtTime(r.created_at)}</span>
+              </div>
+            </div>
+          </div>
+          ${r.remediation_steps?.length ? `<ul class="rca-steps">${r.remediation_steps.slice(0,3).map(s=>`<li>${s}</li>`).join('')}</ul>` : ''}
+        </div>`).join('');
+    }
+    
+    // ─────────────────────────────────────────────
+    // FULL PAGE RENDERERS
+    // ─────────────────────────────────────────────
+    function renderAlertsPage() {
+      const search = document.getElementById('alert-search')?.value?.toLowerCase() || '';
+      const sevFilter = document.getElementById('alert-sev-filter')?.value || '';
+      const srcFilter = document.getElementById('alert-src-filter')?.value || '';
+      const tbody = document.getElementById('alerts-page-body');
+    
+      let filtered = state.alerts;
+      if (search)    filtered = filtered.filter(a => (a.name+a.namespace+a.service).toLowerCase().includes(search));
+      if (sevFilter) filtered = filtered.filter(a => a.severity === sevFilter);
+      if (srcFilter) filtered = filtered.filter(a => a.source_type === srcFilter);
+      if (state.activeFilter !== 'all') filtered = filtered.filter(a => a.severity === state.activeFilter);
+    
+      document.getElementById('alert-count-label').textContent = filtered.length + ' alerts';
+    
+      if (!filtered.length) {
+        tbody.innerHTML = '<tr><td colspan="9"><div class="empty-state"><span class="icon">🔕</span>No alerts match</div></td></tr>';
+        return;
+      }
+      tbody.innerHTML = filtered.map(a => `
+        <tr>
+          <td><span class="sev-badge sev-${a.severity}">${a.severity}</span></td>
+          <td class="mono text-xs" style="max-width:220px;overflow:hidden;text-overflow:ellipsis;cursor:pointer;" onclick="showAlertDetail('${a.id}')">${a.name}</td>
+          <td><span class="tag ${a.status === 'firing' ? 'color-red' : 'color-green'}">${a.status}</span></td>
+          <td class="text-dim text-xs">${a.namespace || '—'}</td>
+          <td class="text-dim text-xs">${a.service || '—'}</td>
+          <td class="text-dim text-xs">${a.node || '—'}</td>
+          <td><span class="tag">${a.source_type}</span></td>
+          <td class="mono text-xs text-dim">${fmtTime(a.starts_at)}</td>
+          <td>
+            <button class="btn btn-ghost btn-sm" style="font-size:9px;" onclick="runRCAForAlert('${a.id}')">🧠 RCA</button>
+          </td>
+        </tr>`).join('');
+    }
+    
+    function renderAnomaliesPage() {
+      const search = document.getElementById('anom-search')?.value?.toLowerCase() || '';
+      const minScore = parseFloat(document.getElementById('anom-score-filter')?.value || 0) / 100;
+      const tbody = document.getElementById('anomalies-page-body');
+    
+      let filtered = state.anomalies;
+      if (search)    filtered = filtered.filter(a => a.metric_name.toLowerCase().includes(search) || (a.service||'').toLowerCase().includes(search));
+      if (minScore > 0) filtered = filtered.filter(a => a.score >= minScore);
+    
+      if (!filtered.length) {
+        tbody.innerHTML = '<tr><td colspan="10"><div class="empty-state"><span class="icon">📈</span>No anomalies match filters</div></td></tr>';
+        return;
+      }
+      tbody.innerHTML = filtered.map(a => `
+        <tr>
+          <td class="mono text-xs" style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.metric_name}</td>
+          <td style="min-width:120px;">${scoreBar(a.score)}</td>
+          <td class="mono text-xs ${(a.zscore||0) >= 3 ? 'color-red' : ''}">${a.zscore !== null ? a.zscore.toFixed(2) : '—'}</td>
+          <td class="mono text-xs">${a.metric_value !== null ? Number(a.metric_value).toExponential(3) : '—'}</td>
+          <td class="mono text-xs text-dim">${a.baseline_value !== null ? Number(a.baseline_value).toExponential(3) : '—'}</td>
+          <td class="mono text-xs ${a.deviation_pct > 0 ? 'color-red' : 'color-green'}">${a.deviation_pct !== null ? (a.deviation_pct > 0 ? '+' : '') + a.deviation_pct.toFixed(1) + '%' : '—'}</td>
+          <td class="text-dim text-xs">${a.service || '—'}</td>
+          <td class="text-dim text-xs">${a.namespace || '—'}</td>
+          <td class="mono text-xs text-dim">${fmtTime(a.detected_at)}</td>
+          <td>
+            <button class="btn btn-ghost btn-sm" style="font-size:9px;" onclick="runRCAForAnomaly('${a.id}')">🧠 RCA</button>
+          </td>
+        </tr>`).join('');
+    }
+    
+    function renderCorrelationPage() {
+      const el = document.getElementById('corr-page-body');
+      if (!state.correlations.length) {
+        el.innerHTML = '<div class="empty-state"><span class="icon">🔗</span>No correlation groups found. Run correlation or ingest alerts to get started.</div>';
+        return;
+      }
+      el.innerHTML = state.correlations.map(g => `
+        <div class="panel" style="margin-bottom:12px;">
+          <div class="panel-header">
+            <span class="corr-pattern pat-${g.pattern.replace(/[^a-z-]/g,'')}">${g.pattern}</span>
+            <span class="mono text-xs" style="margin-left:8px;">${(g.alert_ids||[]).length} alerts</span>
+            <span class="mono text-xs color-accent" style="margin-left:8px;">${(g.similarity_score*100).toFixed(0)}% similarity</span>
+            <span class="mono text-xs text-dim" style="margin-left:auto;">${fmtTime(g.created_at)}</span>
+            <button class="btn btn-primary btn-sm" style="margin-left:12px;" onclick="generateRCAForGroup('${g.id}')">🧠 RCA</button>
+          </div>
+          <div style="padding:12px;">
+            <div class="tag-list">
+              ${(g.labels?.namespaces||[]).map(ns=>`<span class="tag">ns: ${ns}</span>`).join('')}
+              ${(g.labels?.services||[]).map(s=>`<span class="tag" style="color:var(--accent);">svc: ${s}</span>`).join('')}
+            </div>
+            <div style="margin-top:8px;font-size:11px;color:var(--text-2);">
+              Window: ${fmtTime(g.window_start)} → ${fmtTime(g.window_end)}
+              ${g.root_alert_id ? ` · Root: <span class="mono color-accent">${g.root_alert_id.slice(0,8)}…</span>` : ''}
+            </div>
+          </div>
+        </div>`).join('');
+    }
+    
+    function renderRCAPage() {
+      const el = document.getElementById('rca-page-body');
+      if (!state.rcaReports.length) {
+        el.innerHTML = '<div class="empty-state"><span class="icon">🧠</span>No RCA reports yet. Generate one from an alert or correlation group.</div>';
+        return;
+      }
+      el.innerHTML = state.rcaReports.map(r => `
+        <div class="panel" style="margin-bottom:12px;">
+          <div class="panel-header">
+            ${confidenceRing(r.confidence)}
+            <div style="margin-left:8px;flex:1;">
+              <div style="font-size:12px;font-weight:500;">${r.root_cause.slice(0,120)}${r.root_cause.length > 120 ? '…' : ''}</div>
+              <div class="flex items-center gap-2" style="margin-top:4px;">
+                <span class="tag">${r.llm_model}</span>
+                ${r.correlation_group_id ? `<span class="tag color-purple">group: ${r.correlation_group_id.slice(0,8)}</span>` : ''}
+                <span class="mono text-xs text-dim">${fmtTime(r.created_at)}</span>
+              </div>
+            </div>
+          </div>
+          <div style="padding:12px;">
+            <div style="margin-bottom:10px;">
+              <div class="form-label">Root Cause</div>
+              <div style="font-size:12px;color:var(--text);line-height:1.5;">${r.root_cause}</div>
+            </div>
+            ${r.contributing_factors?.length ? `
+            <div style="margin-bottom:10px;">
+              <div class="form-label">Contributing Factors</div>
+              <ul class="rca-steps">${r.contributing_factors.map(f=>`<li>${f}</li>`).join('')}</ul>
+            </div>` : ''}
+            ${r.remediation_steps?.length ? `
+            <div>
+              <div class="form-label">Remediation Steps</div>
+              <ul class="rca-steps">${r.remediation_steps.map((s,i)=>`<li><strong>${i+1}.</strong> ${s}</li>`).join('')}</ul>
+            </div>` : ''}
+          </div>
+        </div>`).join('');
+    }
+    
+    // ─────────────────────────────────────────────
+    // SOURCES
+    // ─────────────────────────────────────────────
+    async function connectPrometheus() {
+      const name = document.getElementById('prom-name').value;
+      const endpoint = document.getElementById('prom-url').value;
+      const data = await apiFetch('/api/v1/sources', {
+        method: 'POST',
+        body: JSON.stringify({ name, source_type: 'prometheus', endpoint }),
+      });
+      if (data) {
+        showToast(data.status === 'ok' ? '✅ Prometheus connected!' : '⚠️ Connected (check endpoint)', data.status === 'ok' ? 'green' : 'yellow');
+        await loadSources();
+      }
+    }
+    
+    async function connectOTEL() {
+      const name = document.getElementById('otel-name').value;
+      const endpoint = document.getElementById('otel-http-url').value;
+      const data = await apiFetch('/api/v1/sources', {
+        method: 'POST',
+        body: JSON.stringify({ name, source_type: 'otel', endpoint }),
+      });
+      if (data) {
+        showToast(data.status === 'ok' ? '✅ OTEL Collector connected!' : '⚠️ Connected (check endpoint)', data.status === 'ok' ? 'green' : 'yellow');
+        await loadSources();
+      }
+    }
+    
+    function renderSourcesList() {
+      const el = document.getElementById('sources-list');
+      if (!state.sources.length) {
+        el.innerHTML = '<div class="empty-state" style="padding:20px;"><span class="icon">🔌</span>No sources</div>';
+        return;
+      }
+      el.innerHTML = state.sources.map(s => `
+        <div class="source-row">
+          <div class="source-status-dot dot-${s.status === 'ok' ? 'ok' : s.status === 'pending' ? 'pen' : 'err'}"></div>
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:500;">${s.name}</div>
+            <div class="mono text-xs text-dim">${s.endpoint}</div>
+            ${s.error_message ? `<div class="mono text-xs color-red">${s.error_message}</div>` : ''}
+          </div>
+          <span class="tag">${s.source_type}</span>
+          <button class="btn btn-ghost btn-sm" onclick="testSource('${s.id}')">Test</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteSource('${s.id}')">✕</button>
+        </div>`).join('');
+    }
+    
+    function renderSidebarSources() {
+      const el = document.getElementById('sidebar-sources');
+      if (!state.sources.length) {
+        el.innerHTML = '<div class="sidebar-item text-muted text-xs">No sources configured</div>';
+        return;
+      }
+      el.innerHTML = state.sources.map(s => `
+        <div class="sidebar-item" onclick="showTab('sources')">
+          <span class="source-status-dot dot-${s.status === 'ok' ? 'ok' : s.status === 'pending' ? 'pen' : 'err'}" style="width:6px;height:6px;flex-shrink:0;"></span>
+          <span style="font-size:11.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${s.name}</span>
+        </div>`).join('');
+    }
+    
+    async function testSource(id) {
+      const data = await apiFetch('/api/v1/sources/' + id + '/test', { method: 'POST' });
+      if (data) {
+        showToast(data.reachable ? '✅ Source reachable' : '❌ Source unreachable', data.reachable ? 'green' : 'red');
+        await loadSources();
+      }
+    }
+    
+    async function deleteSource(id) {
+      await apiFetch('/api/v1/sources/' + id, { method: 'DELETE' });
+      await loadSources();
+    }
+    
+    // ─────────────────────────────────────────────
+    // METRICS / CHARTS
+    // ─────────────────────────────────────────────
+    async function runQuery() {
+      const query = document.getElementById('promql-input').value.trim();
+      if (!query) return;
+    
+      document.getElementById('chart-title').textContent = query;
+      document.getElementById('chart-empty').style.display = 'none';
+    
+      const range = document.getElementById('metrics-range').value;
+      const now = Math.floor(Date.now() / 1000);
+      const rangeMap = { '1h': 3600, '3h': 10800, '6h': 21600, '24h': 86400 };
+      const delta = rangeMap[range] || 3600;
+      const step = Math.max(60, Math.floor(delta / 200)) + 's';
+    
+      const data = await apiFetch(`/api/v1/metrics/query_range?query=${encodeURIComponent(query)}&start=${now - delta}&end=${now}&step=${step}`);
+    
+      if (!data || !data.result?.length) {
+        document.getElementById('chart-empty').style.display = 'flex';
+        document.getElementById('chart-meta').textContent = 'No data';
+        return;
+      }
+    
+      renderChart(data.result, query);
+    }
+    
+    function renderChart(series, title) {
+      const ctx = document.getElementById('metric-chart').getContext('2d');
+    
+      if (state.chartInstance) state.chartInstance.destroy();
+    
+      const colors = ['#00d4ff','#00e676','#b388ff','#ffb300','#ff6d00','#ff1744'];
+    
+      const datasets = series.slice(0, 8).map((s, i) => {
+        const pts = s.values || [];
+        return {
+          label: JSON.stringify(s.metric).slice(0, 60),
+          data: pts.map(p => ({ x: p[0] * 1000, y: parseFloat(p[1]) })),
+          borderColor: colors[i % colors.length],
+          backgroundColor: colors[i % colors.length] + '15',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          fill: false,
+          tension: 0.3,
+        };
+      });
+    
+      state.chartInstance = new Chart(ctx, {
+        type: 'line',
+        data: { datasets },
+        options: {
+          animation: false,
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            x: {
+              type: 'time',
+              ticks: { color: '#4a5568', font: { family: 'IBM Plex Mono', size: 9 } },
+              grid: { color: '#1e2a3a' },
+            },
+            y: {
+              ticks: { color: '#4a5568', font: { family: 'IBM Plex Mono', size: 9 } },
+              grid: { color: '#1e2a3a' },
+            },
+          },
+          plugins: {
+            legend: {
+              labels: { color: '#8b949e', font: { family: 'IBM Plex Mono', size: 9 }, boxWidth: 10 },
+            },
+          },
+        },
+      });
+    
+      document.getElementById('chart-meta').textContent = series.length + ' series';
+    }
+    
+    function renderMetricsList(metrics) {
+      const el = document.getElementById('metrics-list');
+      if (!metrics.length) {
+        el.innerHTML = '<div class="text-muted text-xs" style="padding:8px;">No metrics (connect Prometheus first)</div>';
+        return;
+      }
+      el.innerHTML = metrics.map(m => `
+        <span class="tag" style="cursor:pointer;" onclick="document.getElementById('promql-input').value='${m}';">${m}</span>`).join('');
+    }
+    
+    function filterMetrics() {
+      const q = document.getElementById('metrics-search').value.toLowerCase();
+      const filtered = state.metrics.filter(m => m.toLowerCase().includes(q));
+      renderMetricsList(filtered);
+    }
+    
+    // ─────────────────────────────────────────────
+    // RCA FLOW
+    // ─────────────────────────────────────────────
+    function openRCAModal() {
+      document.getElementById('rca-modal').classList.add('open');
+      document.getElementById('rca-modal-body').innerHTML = `
+        <div class="form-row">
+          <label class="form-label">Correlation Group ID (optional)</label>
+          <input class="form-input" id="rca-group-id" placeholder="Leave blank to use recent alerts">
+        </div>
+        <div class="form-row">
+          <label class="form-label">Extra Context (optional)</label>
+          <input class="form-input" id="rca-context" placeholder="e.g. deployment at 14:30, node drain scheduled">
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+          <button class="btn btn-ghost" onclick="closeRCAModal()">Cancel</button>
+          <button class="btn btn-primary" onclick="generateRCA()">⚡ Analyze with Ollama</button>
+        </div>`;
+    }
+    
+    function closeRCAModal() {
+      document.getElementById('rca-modal').classList.remove('open');
+    }
+    
+    async function generateRCA() {
+      const groupId = document.getElementById('rca-group-id')?.value?.trim();
+      const body = { alert_ids: [], anomaly_ids: [], correlation_group_id: groupId || null };
+    
+      document.getElementById('rca-modal-body').innerHTML = `
+        <div class="loading-spinner">
+          <div class="spinner"></div>
+          <div>Analyzing with Ollama LLM…</div>
+          <div class="mono text-xs text-dim">This may take 30-60 seconds</div>
+        </div>`;
+    
+      const data = await apiFetch('/api/v1/rca/generate', { method: 'POST', body: JSON.stringify(body) });
+      closeRCAModal();
+    
+      if (data) {
+        showToast('✅ RCA generated!', 'green');
+        await loadRCA();
+        showTab('rca');
+      } else {
+        showToast('❌ RCA generation failed', 'red');
+      }
+    }
+    
+    async function generateRCAForGroup(groupId) {
+      const data = await apiFetch('/api/v1/rca/generate', {
+        method: 'POST',
+        body: JSON.stringify({ alert_ids: [], anomaly_ids: [], correlation_group_id: groupId }),
+      });
+      if (data) {
+        showToast('✅ RCA generated!', 'green');
+        await loadRCA();
+        showTab('rca');
+      }
+    }
+    
+    async function runRCAForAlert(alertId) {
+      const data = await apiFetch('/api/v1/rca/generate', {
+        method: 'POST',
+        body: JSON.stringify({ alert_ids: [alertId], anomaly_ids: [] }),
+      });
+      if (data) { showToast('✅ RCA generated!', 'green'); await loadRCA(); }
+    }
+    
+    async function runRCAForAnomaly(anomalyId) {
+      const data = await apiFetch('/api/v1/rca/generate', {
+        method: 'POST',
+        body: JSON.stringify({ alert_ids: [], anomaly_ids: [anomalyId] }),
+      });
+      if (data) { showToast('✅ RCA generated!', 'green'); await loadRCA(); }
+    }
+    
+    async function triggerCorrelation() {
+      // Just reload after a short delay (correlation runs on background schedule)
+      showToast('⚙️ Correlation triggered…', 'blue');
+      setTimeout(async () => { await loadCorrelations(); showToast('✅ Correlation complete', 'green'); }, 3000);
+    }
+    
+    // ─────────────────────────────────────────────
+    // ALERT DETAIL
+    // ─────────────────────────────────────────────
+    async function showAlertDetail(id) {
+      const data = await apiFetch('/api/v1/alerts/' + id);
+      if (!data) return;
+      const el = document.getElementById('alert-modal-body');
+      el.innerHTML = `
+        <div class="mb-3">
+          <div class="flex items-center gap-2 mb-2">
+            <span class="sev-badge sev-${data.severity}">${data.severity}</span>
+            <span class="tag ${data.status === 'firing' ? 'color-red' : 'color-green'}">${data.status}</span>
+            <span class="tag">${data.source_type}</span>
+          </div>
+          <div style="font-size:15px;font-weight:600;margin-bottom:4px;">${data.name}</div>
+          ${data.annotations?.description ? `<div class="text-dim text-sm">${data.annotations.description}</div>` : ''}
+        </div>
+        <div class="divider"></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+          <div><div class="form-label">Namespace</div><div class="mono text-sm">${data.namespace || '—'}</div></div>
+          <div><div class="form-label">Service</div><div class="mono text-sm">${data.service || '—'}</div></div>
+          <div><div class="form-label">Node</div><div class="mono text-sm">${data.node || '—'}</div></div>
+          <div><div class="form-label">Started</div><div class="mono text-sm">${fmtTime(data.starts_at)}</div></div>
+        </div>
+        ${data.labels ? `<div class="form-label">Labels</div><div class="tag-list">${Object.entries(data.labels).map(([k,v])=>`<span class="tag"><span style="color:var(--text-3)">${k}=</span>${v}</span>`).join('')}</div>` : ''}
+        <div class="divider"></div>
+        <button class="btn btn-primary btn-sm" onclick="runRCAForAlert('${data.id}');document.getElementById('alert-modal').classList.remove('open')">🧠 Generate RCA</button>`;
+      document.getElementById('alert-modal').classList.add('open');
+    }
+    
+    // ─────────────────────────────────────────────
+    // SIDEBAR FILTER
+    // ─────────────────────────────────────────────
+    function filterSeverity(severity, el) {
+      document.querySelectorAll('.sidebar-item').forEach(i => i.classList.remove('active'));
+      el.classList.add('active');
+      state.activeFilter = severity;
+      renderAlertsPage();
+    }
+    
+    // ─────────────────────────────────────────────
+    // LIVE FEED
+    // ─────────────────────────────────────────────
+    function addFeedEvent(text, color) {
+      feedEvents.push({ text, color });
+      if (feedEvents.length > 30) feedEvents = feedEvents.slice(-30);
+      renderFeed();
+    }
+    
+    function renderFeed() {
+      const el = document.getElementById('feed-inner');
+      const doubled = [...feedEvents, ...feedEvents];
+      el.innerHTML = doubled.map(e => `
+        <span class="feed-event">
+          <span class="dot" style="background:${e.color};box-shadow:0 0 4px ${e.color}"></span>
+          ${e.text}
+        </span>`).join('');
+    }
+    
+    // ─────────────────────────────────────────────
+    // SSE REAL-TIME
+    // ─────────────────────────────────────────────
+    function connectSSE() {
+      const alertES = new EventSource(API + '/api/v1/alerts/stream');
+      alertES.onmessage = (e) => {
+        try {
+          const alert = JSON.parse(e.data);
+          // Add if not exists
+          if (!state.alerts.find(a => a.id === alert.id)) {
+            state.alerts.unshift(alert);
+            if (state.alerts.length > 500) state.alerts.pop();
+          }
+          updateAlertCounts();
+          renderDashboardAlerts();
+          addFeedEvent(`[${alert.severity?.toUpperCase()}] ${alert.name} | ${alert.namespace || 'N/A'}`, alert.severity === 'critical' ? 'var(--red)' : alert.severity === 'warning' ? 'var(--yellow)' : 'var(--accent)');
+    
+          // Flash new row if on alerts page
+          const tbody = document.getElementById('alerts-page-body');
+          renderAlertsPage();
+        } catch(e) {}
+      };
+      alertES.onerror = () => setTimeout(connectSSE, 5000);
+    
+      const anomalyES = new EventSource(API + '/api/v1/anomalies/stream');
+      anomalyES.onmessage = (e) => {
+        try {
+          const an = JSON.parse(e.data);
+          if (!state.anomalies.find(a => a.id === an.id)) {
+            state.anomalies.unshift(an);
+            if (state.anomalies.length > 500) state.anomalies.pop();
+          }
+          renderDashboardAnomalies();
+          document.getElementById('sb-anomalies').textContent = state.anomalies.length;
+          document.getElementById('kpi-anomalies').textContent = state.anomalies.length;
+          addFeedEvent(`ANOMALY ${an.metric_name} score=${an.score?.toFixed(2)} dev=${an.deviation_pct > 0 ? '+' : ''}${an.deviation_pct?.toFixed(1)}%`, 'var(--yellow)');
+        } catch(e) {}
+      };
+      anomalyES.onerror = () => setTimeout(() => {}, 5000);
+    }
+    
+    // ─────────────────────────────────────────────
+    // HELPERS
+    // ─────────────────────────────────────────────
+    function scoreBar(score) {
+      const pct = Math.round((score || 0) * 100);
+      const color = score >= 0.8 ? 'var(--red)' : score >= 0.6 ? 'var(--yellow)' : 'var(--green)';
+      return `<div class="score-bar-wrap">
+        <div class="score-bar"><div class="score-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+        <span class="score-val mono" style="color:${color}">${score?.toFixed(2)}</span>
+      </div>`;
+    }
+    
+    function confidenceRing(conf) {
+      const pct = Math.round((conf || 0) * 100);
+      const r = 16;
+      const circ = 2 * Math.PI * r;
+      const dash = (conf || 0) * circ;
+      const color = conf >= 0.75 ? 'var(--green)' : conf >= 0.5 ? 'var(--yellow)' : 'var(--red)';
+      return `<div class="confidence-ring">
+        <svg width="44" height="44" viewBox="0 0 44 44">
+          <circle cx="22" cy="22" r="${r}" fill="none" stroke="var(--bg-3)" stroke-width="3"/>
+          <circle cx="22" cy="22" r="${r}" fill="none" stroke="${color}" stroke-width="3"
+            stroke-dasharray="${dash.toFixed(1)} ${circ.toFixed(1)}"
+            stroke-linecap="round"
+            transform="rotate(-90 22 22)"/>
+        </svg>
+        <div class="conf-text">${pct}%</div>
+      </div>`;
+    }
+    
+    function fmtTime(iso) {
+      if (!iso) return '—';
+      try {
+        const d = new Date(iso);
+        const now = Date.now();
+        const diff = Math.floor((now - d.getTime()) / 1000);
+        if (diff < 60)   return diff + 's ago';
+        if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+        return d.toLocaleDateString();
+      } catch(e) { return iso; }
+    }
+    
+    // Toast notifications
+    let toastTimer;
+    function showToast(msg, type = 'green') {
+      let el = document.getElementById('toast');
+      if (!el) {
+        el = document.createElement('div');
+        el.id = 'toast';
+        el.style.cssText = `position:fixed;top:20px;right:20px;padding:10px 18px;border-radius:6px;font-family:var(--font-mono);font-size:11px;z-index:9999;transition:all .2s;border:1px solid;`;
+        document.body.appendChild(el);
+      }
+      const colors = {
+        green:  ['rgba(0,230,118,.15)','var(--green)','rgba(0,230,118,.3)'],
+        red:    ['rgba(255,23,68,.15)', 'var(--red)', 'rgba(255,23,68,.3)'],
+        yellow: ['rgba(255,179,0,.12)','var(--yellow)','rgba(255,179,0,.3)'],
+        blue:   ['rgba(0,212,255,.1)', 'var(--accent)','rgba(0,212,255,.25)'],
+      };
+      const [bg, fg, border] = colors[type] || colors.green;
+      el.style.background = bg;
+      el.style.color = fg;
+      el.style.borderColor = border;
+      el.textContent = msg;
+      el.style.opacity = '1';
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { el.style.opacity = '0'; }, 3000);
+    }
+    
+    // ─────────────────────────────────────────────
+    // INIT
+    // ─────────────────────────────────────────────
+    
+    // Load Chart.js and adapter
+    function loadScript(src, cb) {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = cb;
+      document.head.appendChild(s);
+    }
+    
+    loadScript('https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js', () => {
+      loadScript('https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js', () => {
+        console.log('Chart.js loaded');
+      });
+    });
+    
+    // Bootstrap
+    (async function init() {
+      await refreshAll();
+      connectSSE();
+      // Periodic refresh every 30s
+      setInterval(refreshAll, 30000);
+    
+      // Demo feed events
+      addFeedEvent('AIOps Engine started — waiting for events', 'var(--green)');
+      addFeedEvent('Connect Prometheus/OTEL sources to begin ingestion', 'var(--accent)');
+    })();
+    </script>
+    </body>
+    </html>

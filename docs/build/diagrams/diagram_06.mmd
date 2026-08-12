@@ -1,0 +1,15 @@
+flowchart TB
+    subgraph proc["Single uvicorn process (asyncio event loop)"]
+        H[HTTP handlers\nFastAPI routers]
+        L1[Task: prometheus-scraper]
+        L2[Task: anomaly-detector]
+        L3[Task: correlator]
+        MEM["In-memory state\nMetricWindow{} per series\nEventBus history (deque 500)"]
+    end
+    DBp[(SQLAlchemy async pool)]
+    H --> DBp
+    L1 --> DBp
+    L2 --> DBp
+    L2 --- MEM
+    L3 --> DBp
+    H --- MEM
